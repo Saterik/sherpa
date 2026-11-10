@@ -1,0 +1,15 @@
+includes:
+    - vendor/phpstan/phpstan-doctrine/extension.neon
+    - vendor/phpstan/phpstan-symfony/extension.neon
+
+parameters:
+    level: 5
+    paths:
+        - src
+    excludePaths:
+        - src/Entity
+    ignoreErrors:
+        - '#Access to an undefined property#'
+        - '#Property \w+::$\w+ does not exist#'
+    checkMissingIterableValueType: false
+    checkGenericClassInNonGenericObjectType: false

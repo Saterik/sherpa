@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         beStrictAboutTestsThatDoNotTestAnything="true"
+         beStrictAboutOutputDuringTests="true"
+         beStrictAboutChangesToGlobalState="true">
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
+    </testsuites>
+    <filter>
+        <whitelist processUncoveredFilesFromWhitelist="true">
+            <directory suffix=".php">src</directory>
+        </whitelist>
+    </filter>
+    <php>
+        <env name="APP_ENV" value="test"/>
+        <env name="DATABASE_DRIVER" value="pdo_sqlite"/>
+        <env name="DATABASE_HOST" value="localhost"/>
+        <env name="DATABASE_PORT" value="5432"/>
+        <env name="DATABASE_NAME" value=":memory:"/>
+        <env name="DATABASE_USER" value=""/>
+        <env name="DATABASE_PASSWORD" value=""/>
+        <env name="JWT_SECRET" value="test-secret"/>
+    </php>
+</phpunit>

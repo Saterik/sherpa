@@ -1,0 +1,627 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'openapi' => '3.0.3',
+    'info' => [
+        'title' => 'Sherpa Product Import API',
+        'description' => 'API for importing and managing products from Excel files',
+        'version' => '1.0.0',
+        'contact' => [
+            'name' => 'Sherpa Team',
+            'email' => 'support@sherpa.example.com',
+        ],
+        'license' => [
+            'name' => 'MIT',
+            'url' => 'https://opensource.org/licenses/MIT',
+        ],
+    ],
+    'servers' => [
+        [
+            'url' => '/api',
+            'description' => 'API Server',
+        ],
+    ],
+    'components' => [
+        'securitySchemes' => [
+            'bearerAuth' => [
+                'type' => 'http',
+                'scheme' => 'bearer',
+                'bearerFormat' => 'JWT',
+            ],
+        ],
+        'schemas' => [
+            'Product' => [
+                'type' => 'object',
+                'properties' => [
+                    'id' => ['type' => 'string', 'format' => 'uuid'],
+                    'external_code' => ['type' => 'string'],
+                    'name' => ['type' => 'string'],
+                    'description' => ['type' => 'string', 'nullable' => true],
+                    'price' => ['type' => 'string', 'format' => 'decimal'],
+                    'discount' => ['type' => 'string', 'format' => 'decimal', 'nullable' => true],
+                    'currency' => ['type' => 'string', 'nullable' => true],
+                    'sku' => ['type' => 'string', 'nullable' => true],
+                    'unit' => ['type' => 'string', 'nullable' => true],
+                    'country' => ['type' => 'string', 'nullable' => true],
+                    'vat' => ['type' => 'string', 'nullable' => true],
+                    'brand' => ['type' => 'string', 'nullable' => true],
+                    'barcode' => ['type' => 'string', 'nullable' => true],
+                    'is_archived' => ['type' => 'boolean'],
+                    'weight' => ['type' => 'string', 'nullable' => true],
+                    'is_weight_product' => ['type' => 'boolean'],
+                    'is_marked' => ['type' => 'boolean'],
+                    'volume' => ['type' => 'string', 'nullable' => true],
+                    'has_excise_mark' => ['type' => 'boolean'],
+                    'category' => ['type' => 'string', 'nullable' => true],
+                    'seo_title' => ['type' => 'string', 'nullable' => true],
+                    'seo_h1' => ['type' => 'string', 'nullable' => true],
+                    'seo_description' => ['type' => 'string', 'nullable' => true],
+                    'attributes' => [
+                        'type' => 'object',
+                        'additionalProperties' => ['type' => 'string'],
+                    ],
+                    'images' => [
+                        'type' => 'array',
+                        'items' => ['$ref' => '#/components/schemas/ProductImage'],
+                    ],
+                    'created_at' => ['type' => 'string', 'format' => 'date-time'],
+                    'updated_at' => ['type' => 'string', 'format' => 'date-time'],
+                ],
+            ],
+            'ProductImage' => [
+                'type' => 'object',
+                'properties' => [
+                    'id' => ['type' => 'string', 'format' => 'uuid'],
+                    'url' => ['type' => 'string'],
+                    'path' => ['type' => 'string', 'nullable' => true],
+                    'filename' => ['type' => 'string', 'nullable' => true],
+                    'size' => ['type' => 'integer', 'nullable' => true],
+                    'mime_type' => ['type' => 'string', 'nullable' => true],
+                    'is_main' => ['type' => 'boolean'],
+                    'sort_order' => ['type' => 'integer'],
+                    'download_status' => ['type' => 'string', 'nullable' => true],
+                    'download_error' => ['type' => 'string', 'nullable' => true],
+                    'created_at' => ['type' => 'string', 'format' => 'date-time'],
+                    'downloaded_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
+                ],
+            ],
+            'PaginatedResponse' => [
+                'type' => 'object',
+                'properties' => [
+                    'data' => [
+                        'type' => 'array',
+                        'items' => ['$ref' => '#/components/schemas/Product'],
+                    ],
+                    'meta' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'page' => ['type' => 'integer'],
+                            'limit' => ['type' => 'integer'],
+                            'total' => ['type' => 'integer'],
+                            'total_pages' => ['type' => 'integer'],
+                        ],
+                    ],
+                ],
+            ],
+            'ImportJob' => [
+                'type' => 'object',
+                'properties' => [
+                    'job_id' => ['type' => 'string'],
+                    'status' => ['type' => 'string', 'enum' => ['queued', 'processing', 'completed', 'failed']],
+                    'progress' => ['type' => 'integer'],
+                    'message' => ['type' => 'string'],
+                ],
+            ],
+            'ImportReport' => [
+                'type' => 'object',
+                'properties' => [
+                    'job_id' => ['type' => 'string'],
+                    'errors' => [
+                        'type' => 'array',
+                        'items' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'row' => ['type' => 'integer'],
+                                'external_code' => ['type' => 'string'],
+                                'error' => ['type' => 'string'],
+                                'errors' => [
+                                    'type' => 'array',
+                                    'items' => ['type' => 'string'],
+                                ],
+                            ],
+                        ],
+                    ],
+                    'stats' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'total' => ['type' => 'integer'],
+                            'created' => ['type' => 'integer'],
+                            'updated' => ['type' => 'integer'],
+                            'failed' => ['type' => 'integer'],
+                        ],
+                    ],
+                ],
+            ],
+            'AuthResponse' => [
+                'type' => 'object',
+                'properties' => [
+                    'access_token' => ['type' => 'string'],
+                    'refresh_token' => ['type' => 'string'],
+                    'token_type' => ['type' => 'string'],
+                    'expires_in' => ['type' => 'integer'],
+                    'user' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'id' => ['type' => 'string', 'format' => 'uuid'],
+                            'email' => ['type' => 'string'],
+                            'name' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
+            'Error' => [
+                'type' => 'object',
+                'properties' => [
+                    'error' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'message' => ['type' => 'string'],
+                            'code' => ['type' => 'integer'],
+                            'trace' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
+            'HealthCheck' => [
+                'type' => 'object',
+                'properties' => [
+                    'status' => ['type' => 'string', 'enum' => ['healthy', 'unhealthy']],
+                    'checks' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'database' => ['type' => 'boolean'],
+                            'timestamp' => ['type' => 'string', 'format' => 'date-time'],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ],
+    'security' => [
+        ['bearerAuth' => []],
+    ],
+    'paths' => [
+        '/health' => [
+            'get' => [
+                'summary' => 'Health check',
+                'description' => 'Check API and database health',
+                'operationId' => 'healthCheck',
+                'tags' => ['Health'],
+                'security' => [],
+                'responses' => [
+                    '200' => [
+                        'description' => 'Service is healthy',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => ['$ref' => '#/components/schemas/HealthCheck'],
+                            ],
+                        ],
+                    ],
+                    '503' => [
+                        'description' => 'Service is unhealthy',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => ['$ref' => '#/components/schemas/HealthCheck'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+        '/auth/login' => [
+            'post' => [
+                'summary' => 'User login',
+                'description' => 'Authenticate user and return JWT tokens',
+                'operationId' => 'login',
+                'tags' => ['Authentication'],
+                'security' => [],
+                'requestBody' => [
+                    'required' => true,
+                    'content' => [
+                        'application/json' => [
+                            'schema' => [
+                                'type' => 'object',
+                                'required' => ['email', 'password'],
+                                'properties' => [
+                                    'email' => ['type' => 'string', 'format' => 'email'],
+                                    'password' => ['type' => 'string', 'format' => 'password'],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'responses' => [
+                    '200' => [
+                        'description' => 'Login successful',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => ['$ref' => '#/components/schemas/AuthResponse'],
+                            ],
+                        ],
+                    ],
+                    '401' => [
+                        'description' => 'Invalid credentials',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => ['$ref' => '#/components/schemas/Error'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+        '/auth/register' => [
+            'post' => [
+                'summary' => 'User registration',
+                'description' => 'Register new user and return JWT tokens',
+                'operationId' => 'register',
+                'tags' => ['Authentication'],
+                'security' => [],
+                'requestBody' => [
+                    'required' => true,
+                    'content' => [
+                        'application/json' => [
+                            'schema' => [
+                                'type' => 'object',
+                                'required' => ['email', 'password'],
+                                'properties' => [
+                                    'email' => ['type' => 'string', 'format' => 'email'],
+                                    'password' => ['type' => 'string', 'format' => 'password', 'minLength' => 6],
+                                    'name' => ['type' => 'string'],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'responses' => [
+                    '201' => [
+                        'description' => 'Registration successful',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => ['$ref' => '#/components/schemas/AuthResponse'],
+                            ],
+                        ],
+                    ],
+                    '409' => [
+                        'description' => 'User already exists',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => ['$ref' => '#/components/schemas/Error'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+        '/products' => [
+            'get' => [
+                'summary' => 'List products',
+                'description' => 'Get paginated list of products with filtering and search',
+                'operationId' => 'listProducts',
+                'tags' => ['Products'],
+                'parameters' => [
+                    ['$ref' => '#/components/parameters/Page'],
+                    ['$ref' => '#/components/parameters/Limit'],
+                    ['$ref' => '#/components/parameters/Search'],
+                    ['$ref' => '#/components/parameters/PriceMin'],
+                    ['$ref' => '#/components/parameters/PriceMax'],
+                ],
+                'responses' => [
+                    '200' => [
+                        'description' => 'Products retrieved successfully',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => ['$ref' => '#/components/schemas/PaginatedResponse'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'post' => [
+                'summary' => 'Create product',
+                'description' => 'Create a new product',
+                'operationId' => 'createProduct',
+                'tags' => ['Products'],
+                'requestBody' => [
+                    'required' => true,
+                    'content' => [
+                        'application/json' => [
+                            'schema' => ['$ref' => '#/components/schemas/Product'],
+                        ],
+                    ],
+                ],
+                'responses' => [
+                    '201' => [
+                        'description' => 'Product created',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'data' => ['$ref' => '#/components/schemas/Product'],
+                                        'message' => ['type' => 'string'],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                    '400' => [
+                        'description' => 'Invalid input',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => ['$ref' => '#/components/schemas/Error'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+        '/products/{id}' => [
+            'get' => [
+                'summary' => 'Get product by ID',
+                'description' => 'Retrieve a single product with all relations',
+                'operationId' => 'getProduct',
+                'tags' => ['Products'],
+                'parameters' => [
+                    ['$ref' => '#/components/parameters/ProductId'],
+                ],
+                'responses' => [
+                    '200' => [
+                        'description' => 'Product found',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'data' => ['$ref' => '#/components/schemas/Product'],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                    '404' => [
+                        'description' => 'Product not found',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => ['$ref' => '#/components/schemas/Error'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'put' => [
+                'summary' => 'Update product',
+                'description' => 'Update an existing product',
+                'operationId' => 'updateProduct',
+                'tags' => ['Products'],
+                'parameters' => [
+                    ['$ref' => '#/components/parameters/ProductId'],
+                ],
+                'requestBody' => [
+                    'required' => true,
+                    'content' => [
+                        'application/json' => [
+                            'schema' => ['$ref' => '#/components/schemas/Product'],
+                        ],
+                    ],
+                ],
+                'responses' => [
+                    '200' => [
+                        'description' => 'Product updated',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'data' => ['$ref' => '#/components/schemas/Product'],
+                                        'message' => ['type' => 'string'],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                    '404' => [
+                        'description' => 'Product not found',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => ['$ref' => '#/components/schemas/Error'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'delete' => [
+                'summary' => 'Delete product',
+                'description' => 'Delete a product and all related data',
+                'operationId' => 'deleteProduct',
+                'tags' => ['Products'],
+                'parameters' => [
+                    ['$ref' => '#/components/parameters/ProductId'],
+                ],
+                'responses' => [
+                    '200' => [
+                        'description' => 'Product deleted',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'message' => ['type' => 'string'],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                    '404' => [
+                        'description' => 'Product not found',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => ['$ref' => '#/components/schemas/Error'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+        '/import' => [
+            'post' => [
+                'summary' => 'Import products from Excel',
+                'description' => 'Upload an .xlsx file for asynchronous import processing',
+                'operationId' => 'importProducts',
+                'tags' => ['Import'],
+                'requestBody' => [
+                    'required' => true,
+                    'content' => [
+                        'multipart/form-data' => [
+                            'schema' => [
+                                'type' => 'object',
+                                'properties' => [
+                                    'file' => [
+                                        'type' => 'string',
+                                        'format' => 'binary',
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'responses' => [
+                    '202' => [
+                        'description' => 'Import job queued',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => ['$ref' => '#/components/schemas/ImportJob'],
+                            ],
+                        ],
+                    ],
+                    '400' => [
+                        'description' => 'No file uploaded or invalid file',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => ['$ref' => '#/components/schemas/Error'],
+                            ],
+                        ],
+                    ],
+                    '429' => [
+                        'description' => 'Rate limit exceeded',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => ['$ref' => '#/components/schemas/Error'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+        '/import/{jobId}/status' => [
+            'get' => [
+                'summary' => 'Get import job status',
+                'description' => 'Check the status of an import job',
+                'operationId' => 'getImportStatus',
+                'tags' => ['Import'],
+                'parameters' => [
+                    [
+                        'name' => 'jobId',
+                        'in' => 'path',
+                        'required' => true,
+                        'schema' => ['type' => 'string'],
+                    ],
+                ],
+                'responses' => [
+                    '200' => [
+                        'description' => 'Job status retrieved',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => ['$ref' => '#/components/schemas/ImportJob'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+        '/import/{jobId}/report' => [
+            'get' => [
+                'summary' => 'Get import error report',
+                'description' => 'Get detailed error report for an import job',
+                'operationId' => 'getImportReport',
+                'tags' => ['Import'],
+                'parameters' => [
+                    [
+                        'name' => 'jobId',
+                        'in' => 'path',
+                        'required' => true,
+                        'schema' => ['type' => 'string'],
+                    ],
+                ],
+                'responses' => [
+                    '200' => [
+                        'description' => 'Report retrieved',
+                        'content' => [
+                            'application/json' => [
+                                'schema' => ['$ref' => '#/components/schemas/ImportReport'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ],
+    'components' => [
+        'parameters' => [
+            'Page' => [
+                'name' => 'page',
+                'in' => 'query',
+                'description' => 'Page number',
+                'required' => false,
+                'schema' => ['type' => 'integer', 'minimum' => 1, 'default' => 1],
+            ],
+            'Limit' => [
+                'name' => 'limit',
+                'in' => 'query',
+                'description' => 'Items per page',
+                'required' => false,
+                'schema' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 100, 'default' => 20],
+            ],
+            'Search' => [
+                'name' => 'search',
+                'in' => 'query',
+                'description' => 'Search term (name, SKU, external code)',
+                'required' => false,
+                'schema' => ['type' => 'string'],
+            ],
+            'PriceMin' => [
+                'name' => 'price_min',
+                'in' => 'query',
+                'description' => 'Minimum price filter',
+                'required' => false,
+                'schema' => ['type' => 'number', 'format' => 'float', 'minimum' => 0],
+            ],
+            'PriceMax' => [
+                'name' => 'price_max',
+                'in' => 'query',
+                'description' => 'Maximum price filter',
+                'required' => false,
+                'schema' => ['type' => 'number', 'format' => 'float', 'minimum' => 0],
+            ],
+            'ProductId' => [
+                'name' => 'id',
+                'in' => 'path',
+                'description' => 'Product UUID',
+                'required' => true,
+                'schema' => ['type' => 'string', 'format' => 'uuid'],
+            ],
+        ],
+    ],
+];

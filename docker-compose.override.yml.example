@@ -1,0 +1,38 @@
+version: '3.8'
+
+# This file is for local development overrides
+# Copy to docker-compose.override.yml and modify as needed
+# docker-compose.override.yml is gitignored
+
+services:
+  backend:
+    # Enable Xdebug for debugging
+    environment:
+      - XDEBUG_MODE=develop,debug,coverage
+      - XDEBUG_CLIENT_HOST=host.docker.internal
+      - XDEBUG_CLIENT_PORT=9003
+      - XDEBUG_START_WITH_REQUEST=yes
+    volumes:
+      - ./backend:/var/www/html:cached
+      - ~/.composer:/home/appuser/.composer:cached
+
+  frontend:
+    # Use host machine's node_modules for better performance on Mac/Windows
+    volumes:
+      - ./frontend:/app:cached
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+
+  # Add additional services for development
+  # mailhog:
+  #   image: mailhog/mailhog
+  #   ports:
+  #     - "1025:1025"
+  #     - "8025:8025"
+
+  # redis:
+  #   image: redis:7-alpine
+  #   ports:
+  #     - "6379:6379"
